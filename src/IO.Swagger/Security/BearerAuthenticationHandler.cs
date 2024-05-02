@@ -26,7 +26,7 @@ namespace IO.Swagger.Security
         public const string SchemeName = "Bearer";
         public IConfiguration _configuration { get; private set; }
 
-        public BearerAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, 
+        public BearerAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger,
             UrlEncoder encoder, ISystemClock clock, IConfiguration configuration) : base(options, logger, encoder, clock)
         {
             _configuration = configuration;
@@ -44,32 +44,16 @@ namespace IO.Swagger.Security
             try
             {
                 var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AuthSettings:Secret"]));
 
                 var claims = new[] {
                 new Claim(ClaimTypes.NameIdentifier, "user"),
                 new Claim(ClaimTypes.Name, "user"),
-                //new Claim(ClaimTypes.Expired, DateTime.Now.AddMinutes(5).Ticks)
                 };
-                
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AuthSettings:Secret"]));
-                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-                var token = new JwtSecurityToken(
-                    claims: claims,
-                    expires: DateTime.Now.AddSeconds(10),
-                    signingCredentials: credentials);
-
-                var tokenHandler = new JwtSecurityTokenHandler();
-
-                string tokenAsString = tokenHandler.WriteToken(token);
-                TokenValidationResult result = await tokenHandler.ValidateTokenAsync(tokenAsString, new TokenValidationParameters
-                {
-                    ValidateAudience = false,
-                    ValidateIssuer = false,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = securityKey
-                });
+                //Generate new Token only for testing, in a real case - the token is received from the client
+                string tokenAsString = GenerateToken(claims, securityKey);
+                ValidateToken(tokenAsString, securityKey);
 
                 var identity = new ClaimsIdentity(claims, Scheme.Name);
                 var principal = new ClaimsPrincipal(identity);
@@ -82,6 +66,32 @@ namespace IO.Swagger.Security
                 return AuthenticateResult.Fail("Invalid Authorization Header");
             }
 
+        }
+        private string GenerateToken(Claim[] claims, SymmetricSecurityKey securityKey)
+        {
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.Now.AddSeconds(10),
+                signingCredentials: credentials);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            return tokenHandler.WriteToken(token);
+        }
+
+        private async void ValidateToken(string tokenAsString, SymmetricSecurityKey securityKey) 
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            TokenValidationResult result = await tokenHandler.ValidateTokenAsync(tokenAsString, new TokenValidationParameters
+            {
+                ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = securityKey
+            });
 
         }
     }
