@@ -1,0 +1,101 @@
+{
+  "openapi" : "3.0.0",
+  "info" : {
+    "title" : "bank-mizrahi-calculator",
+    "description" : "The API for Bank Mizrahi",
+    "version" : "1.0.0"
+  },
+  "servers" : [ {
+    "url" : "https://virtserver.swaggerhub.com/RIKI09325_1/Mizrachi/1.0.0",
+    "description" : "SwaggerHub API for Bank Mizrahi"
+  } ],
+  "paths" : {
+    "/calculateArithmeticOperation" : {
+      "post" : {
+        "tags" : [ "calculate" ],
+        "summary" : "Calculation of the values according to the arithmetic operation",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "ok",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request."
+          },
+          "401" : {
+            "description" : "Access token is missing or invalid."
+          },
+          "404" : {
+            "description" : "Not Found."
+          },
+          "5XX" : {
+            "description" : "Unexpected error."
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ApiRequest" : {
+        "required" : [ "arithmeticOperation", "firstValue", "secondValue" ],
+        "type" : "object",
+        "properties" : {
+          "firstValue" : {
+            "pattern" : "^\\d$",
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "secondValue" : {
+            "pattern" : "^\\d$",
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "arithmeticOperation" : {
+            "pattern" : "^[*+\\/-]$",
+            "type" : "string",
+            "enum" : [ "+", "-", "*", "/" ]
+          }
+        }
+      },
+      "ApiResponse" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "type" : "integer",
+            "format" : "decimal"
+          },
+          "statusCode" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorMsg" : {
+            "type" : "string"
+          }
+        },
+        "example" : {
+          "result" : 0,
+          "statusCode" : 6,
+          "errorMsg" : "errorMsg"
+        }
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "type" : "http",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
